@@ -63,4 +63,3 @@ ax.hist(filtered_df["median_house_value"], bins=30)
 ax.set_xlabel("Median House Value")
 ax.set_ylabel("Count")
 st.pyplot(fig)
-

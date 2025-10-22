@@ -11,7 +11,8 @@ def load_housing_data():
 
 df = load_housing_data()
 
-st.title("California Housing Data (1990) by FortuiTy Liu")
+st.title("California Housing Data (1990) by luyiran
+")
 st.caption("See more filters in the sidebar:")
 
 with st.sidebar:
@@ -63,3 +64,4 @@ ax.hist(filtered_df["median_house_value"], bins=30)
 ax.set_xlabel("Median House Value")
 ax.set_ylabel("Count")
 st.pyplot(fig)
+

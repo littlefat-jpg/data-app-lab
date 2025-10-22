@@ -1,79 +1,89 @@
 import streamlit as st
 import pandas as pd
-import plotly.express as px
-from sklearn.datasets import fetch_california_housing
+import matplotlib.pyplot as plt
+import numpy as np
 
-# 设置页面标题
-st.title("🏠 California Housing Data (1990) by [你的名字]")
+# Set page configuration
+st.set_page_config(page_title="California Housing Data", layout="wide")
 
-# 加载数据
+# Load the data
 @st.cache_data
 def load_data():
-    housing = fetch_california_housing()
-    data = pd.DataFrame(housing.data, columns=housing.feature_names)
-    data['MedHouseVal'] = housing.target * 100000
-    data['Latitude'] = housing.data[:, 6]
-    data['Longitude'] = housing.data[:, 7]
-    return data
+    # Replace with your actual file path
+    df = pd.read_csv('housing.csv')
+    return df
 
 df = load_data()
 
-# 侧边栏
-st.sidebar.header("🔧 筛选条件")
+# Sidebar filters
+st.sidebar.header("Filter Options")
 
-# 价格滑块
-min_price = st.sidebar.slider(
-    "💰 最低中位房价",
-    min_value=int(df['MedHouseVal'].min()),
-    max_value=int(df['MedHouseVal'].max()),
-    value=int(df['MedHouseVal'].min()),
-    step=10000
+# Location type filter (ocean proximity)
+location_types = df['ocean_proximity'].unique()
+selected_locations = st.sidebar.multiselect(
+    "Select Location Type(s):",
+    options=location_types,
+    default=location_types
 )
 
-# 收入水平筛选
+# Income level filter
 income_level = st.sidebar.radio(
-    "📊 收入水平",
-    ["全部", "低收入 (≤2.5)", "中等收入 (2.5-4.5)", "高收入 (≥4.5)"]
+    "Select Income Level:",
+    options=["Low (≤2.5)", "Medium (>2.5 & <4.5)", "High (≥4.5)"]
 )
 
-# 应用筛选
-filtered_df = df[df['MedHouseVal'] >= min_price]
+# Apply location filter
+filtered_df = df[df['ocean_proximity'].isin(selected_locations)]
 
-if income_level == "低收入 (≤2.5)":
-    filtered_df = filtered_df[filtered_df['MedInc'] <= 2.5]
-elif income_level == "中等收入 (2.5-4.5)":
-    filtered_df = filtered_df[(filtered_df['MedInc'] > 2.5) & (filtered_df['MedInc'] < 4.5)]
-elif income_level == "高收入 (≥4.5)":
-    filtered_df = filtered_df[filtered_df['MedInc'] >= 4.5]
+# Apply income filter
+if income_level == "Low (≤2.5)":
+    filtered_df = filtered_df[filtered_df['median_income'] <= 2.5]
+elif income_level == "Medium (>2.5 & <4.5)":
+    filtered_df = filtered_df[(filtered_df['median_income'] > 2.5) & (filtered_df['median_income'] < 4.5)]
+else:  # High
+    filtered_df = filtered_df[filtered_df['median_income'] >= 4.5]
 
-# 显示统计信息
-st.write(f"📈 显示 {len(filtered_df)} 条记录（总共 {len(df)} 条）")
+# Main content
+st.title("California Housing Data (1990) by Your Name")  # Replace with your name
 
-# 显示地图
-st.subheader("🗺️ 住房地理位置分布")
-if not filtered_df.empty:
-    st.map(filtered_df[['Latitude', 'Longitude']].dropna())
-else:
-    st.warning("没有数据满足筛选条件")
+# Price slider
+min_price = int(df['median_house_value'].min())
+max_price = int(df['median_house_value'].max())
 
-# 显示直方图
-st.subheader("📊 房价分布直方图")
-if not filtered_df.empty:
-    fig = px.histogram(
-        filtered_df, 
-        x='MedHouseVal', 
-        nbins=30,
-        title="中位房价分布",
-        labels={'MedHouseVal': '中位房价 ($)'}
-    )
-    st.plotly_chart(fig)
-else:
-    st.warning("没有数据可显示直方图")
+price_range = st.slider(
+    "Select Price Range:",
+    min_value=min_price,
+    max_value=max_price,
+    value=(min_price, max_price)
+)
 
-# 显示数据表格
-st.subheader("📋 数据预览")
-if not filtered_df.empty:
-    st.dataframe(filtered_df.head(10))
-else:
-    st.info("请调整筛选条件以查看数据")
+# Apply price filter
+price_filtered_df = filtered_df[
+    (filtered_df['median_house_value'] >= price_range[0]) & 
+    (filtered_df['median_house_value'] <= price_range[1])
+]
+
+# Display map
+st.subheader("Housing Distribution Map")
+st.map(price_filtered_df[['latitude', 'longitude']].dropna())
+
+# Display histogram
+st.subheader("Median House Value Distribution")
+fig, ax = plt.subplots()
+ax.hist(price_filtered_df['median_house_value'], bins=30, alpha=0.7, color='skyblue')
+ax.set_xlabel('Median House Value')
+ax.set_ylabel('Frequency')
+ax.set_title('Distribution of Median House Values')
+st.pyplot(fig)
+
+# Display dataset info
+st.sidebar.header("Dataset Info")
+st.sidebar.write(f"Original dataset size: {len(df)}")
+st.sidebar.write(f"Filtered dataset size: {len(price_filtered_df)}")
+
+# Show raw data option
+if st.sidebar.checkbox("Show Raw Data"):
+    st.subheader("Raw Data")
+    st.dataframe(price_filtered_df)
+
 

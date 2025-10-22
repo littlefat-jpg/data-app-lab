@@ -4,7 +4,7 @@ import plotly.express as px
 from sklearn.datasets import fetch_california_housing
 
 # 设置页面标题
-st.title("🏠 California Housing Data (1990) by Luyiran")
+st.title("🏠 California Housing Data (1990) by Luyiram")
 
 # 加载数据
 @st.cache_data
@@ -12,8 +12,9 @@ def load_data():
     housing = fetch_california_housing()
     data = pd.DataFrame(housing.data, columns=housing.feature_names)
     data['MedHouseVal'] = housing.target * 100000
-    data['Latitude'] = housing.data[:, 6]
-    data['Longitude'] = housing.data[:, 7]
+    # 确保经纬度列存在且命名正确
+    data['Latitude'] = data['Latitude']  # 使用正确的列名
+    data['Longitude'] = data['Longitude']  # 使用正确的列名
     return data
 
 df = load_data()
@@ -49,10 +50,18 @@ elif income_level == "高收入 (≥4.5)":
 # 显示统计信息
 st.write(f"📈 显示 {len(filtered_df)} 条记录（总共 {len(df)} 条）")
 
-# 显示地图
+# 显示地图 - 修复后的代码
 st.subheader("🗺️ 住房地理位置分布")
 if not filtered_df.empty:
-    st.map(filtered_df[['Latitude', 'Longitude']].dropna())
+    # 确保数据格式正确
+    map_data = filtered_df[['Latitude', 'Longitude']].copy()
+    map_data = map_data.dropna()  # 修复拼写错误
+    
+    # 检查数据范围是否合理
+    if len(map_data) > 0:
+        st.map(map_data)
+    else:
+        st.warning("没有有效的地理位置数据可显示")
 else:
     st.warning("没有数据满足筛选条件")
 
@@ -76,3 +85,11 @@ if not filtered_df.empty:
     st.dataframe(filtered_df.head(10))
 else:
     st.info("请调整筛选条件以查看数据")
+
+# 调试信息（可选）
+with st.expander("🔍 调试信息"):
+    st.write("数据列名:", list(df.columns))
+    st.write("地图数据形状:", filtered_df[['Latitude', 'Longitude']].shape)
+    st.write("经纬度范围:")
+    st.write("- 纬度:", filtered_df['Latitude'].min(), "~", filtered_df['Latitude'].max())
+    st.write("- 经度:", filtered_df['Longitude'].min(), "~", filtered_df['Longitude'].max())
